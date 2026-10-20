@@ -1,0 +1,26 @@
+# Servidor MySQL para el proyecto final MediSalud (Curso de Java).
+# Uso: docker compose up -d   (desde la carpeta proyecto-final/solucion)
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: medisalud-mysql
+    restart: unless-stopped
+    environment:
+      # Usuario root con la misma clave que usa ConexionBD (root/root)
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      # puerto de tu computadora : puerto del contenedor
+      -  "3307:3306"
+    volumes:
+      # Los datos se guardan en un volumen: sobreviven a docker compose down
+      - medisalud-datos:/var/lib/mysql
+      # Los .sql de esta carpeta se ejecutan solos la PRIMERA vez que arranca el contenedor
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  medisalud-datos:
