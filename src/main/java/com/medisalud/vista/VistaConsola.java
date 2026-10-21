@@ -21,6 +21,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import com.medisalud.exception.CancelacionTardiaException;
 
 public class VistaConsola {
 
@@ -34,7 +35,6 @@ public class VistaConsola {
     public void mostrarMenu() {
         boolean continuar = true;
         while (continuar) {
-            System.out.println();
             System.out.println("=== Menu principal - MediSalud ===");
             System.out.println("1. Registrar paciente");
             System.out.println("2. Registrar medico");
@@ -42,7 +42,8 @@ public class VistaConsola {
             System.out.println("4. Consultar historia clinica");
             System.out.println("5. Facturar consulta");
             System.out.println("6. Generar reporte");
-            System.out.println("7. Salir");
+            System.out.println("7. Cancelar cita");
+            System.out.println("8. Salir");
             System.out.print("Elegir una opcion: ");
             String opcion = lector.nextLine();
 
@@ -66,6 +67,9 @@ public class VistaConsola {
                     generarReporte();
                     break;
                 case "7":
+                    cancelarCita();
+                    break;
+                case "8":
                     continuar = false;
                     break;
                 default:
@@ -196,6 +200,31 @@ public class VistaConsola {
             System.out.println(factura);
         } catch (CitaNoEncontradaException excepcion) {
             System.out.println("No se pudo facturar: " + excepcion.getMessage());
+        }
+    }
+
+    private void cancelarCita() {
+        try {
+            System.out.print("Codigo de la cita: ");
+            String codigo = lector.nextLine();
+
+            System.out.print("Motivo de cancelacion: ");
+            String motivo = lector.nextLine();
+
+            Cita cita = controlador.cancelarCita(codigo, motivo);
+
+            System.out.println("Cita cancelada correctamente:");
+            System.out.println(cita);
+
+        } catch (CitaNoEncontradaException
+                 | TransicionInvalidaException
+                 | CancelacionTardiaException excepcion) {
+            System.out.println("No se pudo cancelar la cita: "
+                    + excepcion.getMessage());
+
+        } catch (IllegalArgumentException excepcion) {
+            System.out.println("Motivo no valido: "
+                    + excepcion.getMessage());
         }
     }
 

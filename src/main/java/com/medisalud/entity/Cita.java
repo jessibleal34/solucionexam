@@ -18,6 +18,7 @@ public class Cita implements Serializable {
     private final LocalDate fecha;
     private EstadoCita estado;
     private String motivoCancelacion;
+
     private transient List<ObservadorCita> observadores = new ArrayList<>();
 
     public Cita(String codigo, Paciente paciente, Medico medico, LocalDate fecha) {
@@ -55,6 +56,14 @@ public class Cita implements Serializable {
 
         this.motivoCancelacion = motivo.trim();
         cambiarEstado(EstadoCita.CANCELADA);
+    }
+
+        public void restaurarEstado(EstadoCita estado) {
+            this.estado = estado;
+        }
+
+    public void restaurarMotivoCancelacion(String motivo) {
+        this.motivoCancelacion = motivo;
     }
 
     public String getCodigo() {

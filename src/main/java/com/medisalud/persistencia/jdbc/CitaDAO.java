@@ -28,25 +28,40 @@ public class CitaDAO implements RepositorioCitas {
 
     @Override
     public void guardar(Cita cita) {
-        String sql = "INSERT INTO citas (codigo, paciente_codigo, medico_codigo, fecha, estado) "
-                + "VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE estado = ?";
+        String sql = "INSERT INTO citas"
+                + "(codigo, paciente_codigo, medico_codigo, fecha, estado, motivo_cancelacion) "
+                + "VALUES (?, ?, ?, ?, ?, ?) "
+                + "ON DUPLICATE KEY UPDATE "
+                + "estado = ?, motivo_cancelacion = ?";
+
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
+
             sentencia.setString(1, cita.getCodigo());
             sentencia.setString(2, cita.getPaciente().getCodigo());
             sentencia.setString(3, cita.getMedico().getCodigo());
             sentencia.setDate(4, Date.valueOf(cita.getFecha()));
             sentencia.setString(5, cita.getEstado().name());
-            sentencia.setString(6, cita.getEstado().name());
+            sentencia.setString(6, cita.getMotivoCancelacion());
+
+            sentencia.setString(7, cita.getEstado().name());
+            sentencia.setString(8, cita.getMotivoCancelacion());
+
             sentencia.executeUpdate();
+
         } catch (SQLException excepcion) {
-            throw new RuntimeException("No se pudo guardar la cita " + cita.getCodigo(), excepcion);
+            throw new RuntimeException(
+                    "No se pudo guardar la cita " + cita.getCodigo(),
+                    excepcion
+            );
         }
     }
 
+
     @Override
     public Cita buscarPorCodigo(String codigo) {
-        String sql = "SELECT codigo, paciente_codigo, medico_codigo, fecha, estado FROM citas WHERE codigo = ?";
+        String sql = "SELECT codigo, paciente_codigo, medico_codigo, fecha, estado, "
+                + "motivo_cancelacion FROM citas WHERE codigo = ?";
         try (Connection conexion = ConexionBD.obtenerConexion();
              PreparedStatement sentencia = conexion.prepareStatement(sql)) {
             sentencia.setString(1, codigo);
@@ -63,14 +78,17 @@ public class CitaDAO implements RepositorioCitas {
 
     @Override
     public List<Cita> listarTodas() {
-        String sql = "SELECT codigo, paciente_codigo, medico_codigo, fecha, estado FROM citas";
+        String sql = "SELECT codigo, paciente_codigo, medico_codigo, fecha, estado, "
+                + "motivo_cancelacion FROM citas";
+
         return listarConFiltro(sql, null);
     }
 
     @Override
     public List<Cita> listarPorMedico(String codigoMedico) {
-        String sql = "SELECT codigo, paciente_codigo, medico_codigo, fecha, estado FROM citas "
-                + "WHERE medico_codigo = ?";
+        String sql = "SELECT codigo, paciente_codigo, medico_codigo, fecha, estado, "
+                + "motivo_cancelacion FROM citas WHERE medico_codigo = ?";
+
         return listarConFiltro(sql, codigoMedico);
     }
 
@@ -92,13 +110,32 @@ public class CitaDAO implements RepositorioCitas {
         return citas;
     }
 
+
     private Cita mapearCita(ResultSet resultado) throws SQLException {
         String codigo = resultado.getString("codigo");
-        Paciente paciente = repositorioPacientes.buscarPorCodigo(resultado.getString("paciente_codigo"));
-        Medico medico = repositorioMedicos.buscarPorCodigo(resultado.getString("medico_codigo"));
+
+        Paciente paciente = repositorioPacientes.buscarPorCodigo(
+                resultado.getString("paciente_codigo")
+        );
+
+        Medico medico = repositorioMedicos.buscarPorCodigo(
+                resultado.getString("medico_codigo")
+        );
+
         LocalDate fecha = resultado.getDate("fecha").toLocalDate();
+
         Cita cita = new Cita(codigo, paciente, medico, fecha);
-        cita.cambiarEstado(EstadoCita.valueOf(resultado.getString("estado")));
+
+        cita.restaurarEstado(
+                EstadoCita.valueOf(resultado.getString("estado"))
+        );
+
+        String motivo = resultado.getString("motivo_cancelacion");
+
+        if (motivo != null) {
+            cita.restaurarMotivoCancelacion(motivo);
+        }
+
         return cita;
     }
 }

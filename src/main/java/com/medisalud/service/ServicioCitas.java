@@ -9,6 +9,7 @@ import com.medisalud.exception.TransicionInvalidaException;
 import com.medisalud.repository.RepositorioCitas;
 import java.time.LocalDate;
 import java.util.List;
+import com.medisalud.exception.CancelacionTardiaException;
 
 public class ServicioCitas {
 
@@ -42,9 +43,51 @@ public class ServicioCitas {
         cita.getPaciente().getHistoriaClinica().agregarConsulta(diagnostico);
     }
 
-    public void cancelarCita(String codigo) throws CitaNoEncontradaException, TransicionInvalidaException {
-        cambiarEstado(codigo, EstadoCita.CANCELADA);
+
+
+
+    public Cita cancelarCita(String codigo, String motivo)
+            throws CitaNoEncontradaException,
+            TransicionInvalidaException,
+            CancelacionTardiaException {
+
+        Cita cita = buscarPorCodigo(codigo);
+
+        // Validar el motivo antes de modificar la cita.
+        if (motivo == null || motivo.trim().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "El motivo de cancelación es obligatorio."
+            );
+        }
+
+        if (motivo.trim().length() > 200) {
+            throw new IllegalArgumentException(
+                    "El motivo no puede superar los 200 caracteres."
+            );
+        }
+
+        // No permitir cancelar citas de fechas anteriores a hoy.
+        if (cita.getFecha().isBefore(LocalDate.now())) {
+            throw new CancelacionTardiaException(
+                    cita.getCodigo(), cita.getFecha()
+            );
+        }
+
+        // Reutilizar las reglas del patrón State.
+        if (!cita.getEstado().puedeTransicionarA(EstadoCita.CANCELADA)) {
+            throw new TransicionInvalidaException(
+                    codigo, cita.getEstado(), EstadoCita.CANCELADA
+            );
+        }
+
+        // El método de dominio guarda el motivo y notifica el cambio.
+        cita.cancelarConMotivo(motivo);
+
+        repositorioCitas.guardar(cita);
+
+        return cita;
     }
+
 
     public List<Cita> listarPorMedico(String codigoMedico) {
         return repositorioCitas.listarPorMedico(codigoMedico);

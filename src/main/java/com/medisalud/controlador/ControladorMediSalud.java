@@ -18,6 +18,7 @@ import com.medisalud.service.ServicioPacientes;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import com.medisalud.exception.CancelacionTardiaException;
 
 public class ControladorMediSalud {
 
@@ -54,6 +55,12 @@ public class ControladorMediSalud {
 
     public void confirmarCita(String codigoCita) throws CitaNoEncontradaException, TransicionInvalidaException {
         servicioCitas.confirmarCita(codigoCita);
+    }
+    public Cita cancelarCita(String codigoCita, String motivo)
+            throws CitaNoEncontradaException,
+            TransicionInvalidaException,
+            CancelacionTardiaException {
+        return servicioCitas.cancelarCita(codigoCita, motivo);
     }
 
     public void atenderCita(String codigoCita, String diagnostico)
